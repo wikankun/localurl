@@ -87,13 +87,34 @@ jobs:
           echo "✅ No external CDN references found"
         fi
 
-        # Check JS files don't import from node_modules
-        if grep -r "require\|import.*from.*'" src/js/ | grep -v "^[[:space:]]*//"; then
-          echo "❌ External module imports found"
-          grep -r "require\|import.*from.*'" src/js/
+        # Check JS files don't import external npm packages
+        # Look for imports that don't use relative paths (./ or ../)
+        echo "Checking for external module imports..."
+
+        # Count relative imports
+        RELATIVE_IMPORTS=$(grep -r "import.*from\s*['\"]\./" src/js/ 2>/dev/null | wc -l || echo "0")
+        RELATIVE_PARENT_IMPORTS=$(grep -r "import.*from\s*['\"]\.\./" src/js/ 2>/dev/null | wc -l || echo "0")
+
+        # Count non-relative imports (excluding comments)
+        NON_RELATIVE_IMPORTS=$(grep -r "import.*from\s*['\"]" src/js/ 2>/dev/null | grep -v "\./" | grep -v "\.\./" | grep -v "//" | wc -l || echo "0")
+
+        # Count require statements
+        NON_RELATIVE_REQUIRES=$(grep -r "require(\s*['\"]" src/js/ 2>/dev/null | grep -v "\./" | grep -v "\.\./" | grep -v "//" | wc -l || echo "0")
+
+        echo "Found $RELATIVE_IMPORTS relative imports (./)"
+        echo "Found $RELATIVE_PARENT_IMPORTS relative parent imports (../)"
+        echo "Found $NON_RELATIVE_IMPORTS potential external imports"
+        echo "Found $NON_RELATIVE_REQUIRES potential external requires"
+
+        if [ "$NON_RELATIVE_IMPORTS" -gt 0 ] || [ "$NON_RELATIVE_REQUIRES" -gt 0 ]; then
+          echo "❌ External module imports found (non-relative paths):"
+          grep -r "import.*from\s*['\"]" src/js/ 2>/dev/null | grep -v "\./" | grep -v "\.\./" | grep -v "//" || true
+          grep -r "require(\s*['\"]" src/js/ 2>/dev/null | grep -v "\./" | grep -v "\.\./" | grep -v "//" || true
+          echo ""
+          echo "If these are internal imports, please use relative paths (./ or ../)"
           exit 1
         else
-          echo "✅ No external module imports found"
+          echo "✅ Only internal module imports found (using relative paths)"
         fi
 
   build:
@@ -208,13 +229,32 @@ jobs:
         echo "Verifying privacy requirements..."
 
         # Check that no external analytics or tracking scripts are included
-        # Look for specific tracking patterns, not just the word "segment"
-        if grep -r -E "google-analytics\.com|googletagmanager\.com|gtag\(|fbq\(|mixpanel\(|segment\.io|analytics" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.yml" --exclude="*.md"; then
-          echo "❌ Tracking scripts found - this violates privacy requirements"
+        # Look for specific tracking patterns, excluding comments
+        echo "Checking for tracking scripts..."
+
+        # Check for actual tracking script URLs and function calls (excluding comments)
+        if grep -r -E "google-analytics\.com|googletagmanager\.com|gtag\(|fbq\(|mixpanel\(|segment\.io" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.yml" --exclude="*.md" 2>/dev/null | grep -v "^[[:space:]]*//"; then
+          echo "❌ External tracking scripts found - this violates privacy requirements"
+          grep -r -E "google-analytics\.com|googletagmanager\.com|gtag\(|fbq\(|mixpanel\(|segment\.io" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.yml" --exclude="*.md" 2>/dev/null | grep -v "^[[:space:]]*//"
           exit 1
-        else
-          echo "✅ No tracking scripts found"
         fi
+
+        # Check for analytics implementation (excluding comments and documentation)
+        # Look for actual analytics code patterns, not just mentions in documentation
+        if grep -r "\.track\(|\.page\(|\.identify\(|analytics\.init\(" src/js/ 2>/dev/null | grep -v "^[[:space:]]*//"; then
+          echo "❌ Analytics tracking code found - this violates privacy requirements"
+          grep -r "\.track\(|\.page\(|\.identify\(|analytics\.init\(" src/js/ 2>/dev/null | grep -v "^[[:space:]]*//"
+          exit 1
+        fi
+
+        # Check for external analytics URLs in code (excluding comments)
+        if grep -r "https://.*analytics\|https://.*tracking\|https://.*telemetry" src/js/ 2>/dev/null | grep -v "^[[:space:]]*//"; then
+          echo "❌ External analytics URLs found - this violates privacy requirements"
+          grep -r "https://.*analytics\|https://.*tracking\|https://.*telemetry" src/js/ 2>/dev/null | grep -v "^[[:space:]]*//"
+          exit 1
+        fi
+
+        echo "✅ No tracking scripts found"
 
         # Check that no external API calls are made
         if grep -r "fetch.*http\|XMLHttpRequest" src/js/ | grep -v "//"; then

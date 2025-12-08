@@ -17,6 +17,12 @@ on:
         - minor
         - major
 
+# Set permissions for the workflow
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
 # Prevent multiple releases from running simultaneously
 concurrency:
   group: release
@@ -350,6 +356,8 @@ jobs:
     - name: Push changes and tags
       if: steps.version.outputs.skip-version == 'false'
       run: |
+        # Configure git with the GITHUB_TOKEN
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
         git push origin main --follow-tags
 
     - name: Skip version bump notification
@@ -393,8 +401,10 @@ jobs:
         asset_content_type: application/zip
 
     - name: Trigger deployment
+      if: steps.version.outputs.skip-version == 'false'
       uses: peter-evans/repository-dispatch@v2
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         event-type: new-release
         client-payload: '{"version": "${{ steps.version.outputs.new }}", "tag": "v${{ steps.version.outputs.new }}"}'
 

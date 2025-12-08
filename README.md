@@ -254,6 +254,28 @@ docs: update documentation      # No version bump
 - ![Release](https://github.com/wikankun/localurl/workflows/Release/badge.svg) - Latest release
 - ![Deploy](https://github.com/wikankun/localurl/workflows/Deploy/badge.svg) - Deployment status
 
+### Setup Instructions
+
+For the workflows to function properly, ensure:
+
+1. **Repository Settings**:
+   - Go to Settings → Actions → General
+   - Enable "Allow GitHub Actions to create and approve pull requests"
+   - Enable "Allow GitHub Actions to run workflows and create comments"
+   - Set "Workflow permissions" to "Read and write permissions"
+
+2. **GitHub Pages** (for deployment):
+   - Go to Settings → Pages
+   - Source: Deploy from a branch
+   - Branch: `gh-pages` (will be created automatically)
+   - Folder: `/ (root)`
+
+3. **Branch Protection** (optional):
+   - Go to Settings → Branches
+   - Add rule for `main` branch
+   - Require status checks to pass before merging
+   - Include: `CI`, `Analyze Commits`
+
 ## 🔧 Development
 
 ### Prerequisites

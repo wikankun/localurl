@@ -17,6 +17,7 @@
     "lint:css": "stylelint 'src/css/*.css' --ignore-path .gitignore || echo 'Stylelint configuration not found'",
     "lint:js": "echo 'JavaScript linting not configured'",
     "test": "echo 'Tests not yet implemented'",
+    "version": "node -p \"require('./package.json').version\"",
     "deploy:vercel": "npm run build-css && vercel --prod",
     "deploy:netlify": "npm run build-css && netlify deploy --prod --dir=.",
     "clean": "find . -name '*.log' -type f -delete && find . -name '.DS_Store' -type f -delete"
