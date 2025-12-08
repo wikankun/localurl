@@ -34,7 +34,7 @@ LocalURL is a lightweight, privacy-first URL shortener that runs entirely in you
 
 ### Method 1: Direct Download
 
-1. Download the latest release from [Releases](https://github.com/your-repo/localurl/releases)
+1. Download the latest release from [Releases](https://github.com/wikankun/localurl/releases)
 2. Extract the archive
 3. Open `index.html` in your web browser
 4. Done! 🎉
@@ -43,7 +43,7 @@ LocalURL is a lightweight, privacy-first URL shortener that runs entirely in you
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/localurl.git
+git clone https://github.com/wikankun/localurl.git
 cd localurl
 
 # Start a local server
@@ -56,7 +56,7 @@ python -m http.server 8000
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/localurl.git
+git clone https://github.com/wikankun/localurl.git
 cd localurl
 
 # Install serve globally (if not already installed)
@@ -71,11 +71,7 @@ serve .
 ### Method 4: Docker
 
 ```bash
-# Pull and run
-docker run -p 8000:8000 ghcr.io/your-repo/localurl:latest
-
-# Or build and run locally
-git clone https://github.com/your-repo/localurl.git
+git clone https://github.com/wikankun/localurl.git
 cd localurl
 docker build -t localurl .
 docker run -p 8000:8000 localurl
@@ -268,7 +264,7 @@ For the workflows to function properly, ensure:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/localurl.git
+git clone https://github.com/wikankun/localurl.git
 cd localurl
 
 # Install Node.js dependencies
@@ -310,12 +306,6 @@ LocalURL works in all modern browsers that support:
 - ES6+ JavaScript features
 - CSS Custom Properties
 - Fetch API
-
-Tested in:
-- ✅ Chrome 90+
-- ✅ Firefox 88+
-- ✅ Safari 14+
-- ✅ Edge 90+
 
 ## 📊 Data Storage
 
@@ -399,10 +389,6 @@ Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTIN
 - Test your changes thoroughly
 - Follow the existing code style
 
-## 📝 Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version history.
-
 ## 📄 License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
@@ -416,16 +402,16 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## 🔗 Links
 
-- [Homepage](https://github.com/your-repo/localurl)
-- [Documentation](https://github.com/your-repo/localurl/wiki)
-- [Issues](https://github.com/your-repo/localurl/issues)
-- [Releases](https://github.com/your-repo/localurl/releases)
+- [Homepage](https://github.com/wikankun/localurl)
+- [Documentation](https://github.com/wikankun/localurl/wiki)
+- [Issues](https://github.com/wikankun/localurl/issues)
+- [Releases](https://github.com/wikankun/localurl/releases)
 
 ## 📞 Support
 
 If you encounter any issues or have questions:
 
-1. Check the [Issues](https://github.com/your-repo/localurl/issues) page
+1. Check the [Issues](https://github.com/wikankun/localurl/issues) page
 2. Search existing discussions
 3. Create a new issue with details
 4. Include browser version and steps to reproduce
@@ -436,6 +422,6 @@ If you encounter any issues or have questions:
 
 **Made with ❤️ for privacy-conscious users**
 
-[⭐ Star this repo](https://github.com/your-repo/localurl) | [🐛 Report Issues](https://github.com/your-repo/localurl/issues) | [💡 Suggest Features](https://github.com/your-repo/localurl/discussions)
+[⭐ Star this repo](https://github.com/wikankun/localurl) | [🐛 Report Issues](https://github.com/wikankun/localurl/issues) | [💡 Suggest Features](https://github.com/wikankun/localurl/discussions)
 
 </div>
