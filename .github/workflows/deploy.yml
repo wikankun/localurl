@@ -31,7 +31,7 @@ jobs:
     name: Build and Deploy
     runs-on: ubuntu-latest
     environment:
-      name: ${{ github.event.inputs.environment || 'production' }}
+      name: ${{ github.event.inputs.environment || "production" }}
       url: ${{ steps.deployment.outputs.url }}
 
     steps:
