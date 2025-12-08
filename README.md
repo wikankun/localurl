@@ -12,7 +12,6 @@
 [![CSS3](https://img.shields.io/badge/CSS3-Modern-green.svg)](https://developer.mozilla.org/en-US/docs/Web/CSS)
 [![CI](https://github.com/wikankun/localurl/workflows/CI/badge.svg)](https://github.com/wikankun/localurl/actions)
 [![Release](https://github.com/wikankun/localurl/workflows/Release/badge.svg)](https://github.com/wikankun/localurl/releases)
-[![Deploy](https://github.com/wikankun/localurl/workflows/Deploy/badge.svg)](https://wikankun.github.io/localurl)
 
 </div>
 
@@ -29,8 +28,6 @@ LocalURL is a lightweight, privacy-first URL shortener that runs entirely in you
 - 🔍 **Search & Sort** - Find your links quickly
 - 📊 **Click Tracking** - Local analytics only
 - 📤 **Export/Import** - Backup your links as JSON
-- 📱 **QR Codes** - Generate QR codes for your links
-- ⌨️ **Keyboard Shortcuts** - Power user features
 - 🐳 **Docker Ready** - Easy deployment
 
 ## 🚀 Quick Start
@@ -91,8 +88,7 @@ docker run -p 8000:8000 localurl
 1. **Basic Link**: Enter any URL and click "Create Short Link"
 2. **Custom Slug**: Optional - enter your preferred short identifier
 3. **Random Slug**: Click the dice button for a random slug
-4. **Copy Link**: Use the copy button or keyboard shortcut
-5. **QR Code**: Generate QR codes for mobile sharing
+4. **Copy Link**: Use the copy button
 
 ### Managing Links
 
@@ -110,15 +106,6 @@ docker run -p 8000:8000 localurl
 - **Import Links**: Restore from JSON file
 - **Clear Data**: Delete all stored links
 - **Statistics**: View total links and clicks
-
-## ⌨️ Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl/Cmd + K` | Search links (Manage page) |
-| `Ctrl/Cmd + N` | Create new link (when not on Home) |
-| `Escape` | Close modal/dialog |
-| `?` | Show keyboard shortcuts help |
 
 ## 🏗️ Architecture
 
@@ -247,12 +234,6 @@ feat!: breaking change          # Major version bump
 chore: update dependencies      # No version bump
 docs: update documentation      # No version bump
 ```
-
-### Badges
-
-- ![CI](https://github.com/wikankun/localurl/workflows/CI/badge.svg) - CI status
-- ![Release](https://github.com/wikankun/localurl/workflows/Release/badge.svg) - Latest release
-- ![Deploy](https://github.com/wikankun/localurl/workflows/Deploy/badge.svg) - Deployment status
 
 ### Setup Instructions
 
