@@ -1,0 +1,368 @@
+name: Deploy
+
+# Deploy to GitHub Pages on release creation or manual trigger
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
+
+# Allow only one deployment at a time
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deployment.outputs.url }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.event.release.tag_name || github.ref }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build CSS
+      run: |
+        echo "Building CSS for deployment..."
+        npm run build-css
+
+        # Verify CSS was built
+        if [ ! -f src/css/output.css ]; then
+          echo "❌ CSS build failed - output.css not found"
+          exit 1
+        fi
+
+        echo "✅ CSS build completed successfully"
+
+    - name: Create 404.html for SPA routing
+      run: |
+        # Create a 404 page that redirects to index.html for SPA routing
+        cat > 404.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>LocalURL - Page Not Found</title>
+            <script>
+                // SPA routing fallback
+                sessionStorage.setItem('404-path', window.location.pathname);
+                window.location.href = '/';
+            </script>
+        </head>
+        <body>
+            <h1>Redirecting...</h1>
+            <p>If you're not redirected automatically, <a href="/">click here</a>.</p>
+        </body>
+        </html>
+        EOF
+        echo "✅ Created 404.html for SPA routing"
+
+    - name: Update index.html for GitHub Pages
+      run: |
+        # Add base href if deploying to GitHub Pages with custom domain or subdirectory
+        if [ "${{ github.repository_owner }}" != "wikan" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          # Add base href for non-production deployments
+          sed -i.bak 's/<head>/<head>\n  <base href="\/localurl\/">/' index.html
+          echo "✅ Added base href for subdirectory deployment"
+        fi
+
+        # Add deployment info comment
+        CURRENT_DATE=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+        COMMIT_SHA=${{ github.sha }}
+        sed -i.bak "s/<!-- LocalURL -->/<!-- LocalURL\n\n  Deployed: $CURRENT_DATE\n  Commit: $COMMIT_SHA\n  Environment: ${{ github.event.inputs.environment || 'production' }}\n-->/g" index.html
+
+    - name: Optimize for production
+      run: |
+        echo "Optimizing files for production..."
+
+        # Minify HTML
+        if command -v html-minifier-terser &> /dev/null; then
+          npx html-minifier-terser \
+            --collapse-whitespace \
+            --remove-comments \
+            --remove-optional-tags \
+            --remove-redundant-attributes \
+            --remove-script-type-attributes \
+            --remove-tag-whitespace \
+            --use-short-doctype \
+            --minify-css true \
+            --minify-js true \
+            -o index.html index.html
+          echo "✅ HTML minified"
+        else
+          echo "ℹ️  html-minifier-terser not available, skipping HTML minification"
+        fi
+
+        # Add cache headers meta tag
+        sed -i 's/<head>/<head>\n  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">\n  <meta http-equiv="Pragma" content="no-cache">\n  <meta http-equiv="Expires" content="0">/' index.html
+
+        # Create .nojekyll file to skip Jekyll processing
+        touch .nojekyll
+        echo "✅ Created .nojekyll file"
+
+    - name: Create sitemap.xml
+      run: |
+        # Generate a basic sitemap
+        BASE_URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+        CURRENT_DATE=$(date -u +"%Y-%m-%d")
+
+        cat > sitemap.xml << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+            <url>
+                <loc>${BASE_URL}/</loc>
+                <lastmod>${CURRENT_DATE}</lastmod>
+                <changefreq>weekly</changefreq>
+                <priority>1.0</priority>
+            </url>
+            <url>
+                <loc>${BASE_URL}/manage</loc>
+                <lastmod>${CURRENT_DATE}</lastmod>
+                <changefreq>weekly</changefreq>
+                <priority>0.8</priority>
+            </url>
+            <url>
+                <loc>${BASE_URL}/settings</loc>
+                <lastmod>${CURRENT_DATE}</lastmod>
+                <changefreq>monthly</changefreq>
+                <priority>0.5</priority>
+            </url>
+            <url>
+                <loc>${BASE_URL}/about</loc>
+                <lastmod>${CURRENT_DATE}</lastmod>
+                <changefreq>yearly</changefreq>
+                <priority>0.3</priority>
+            </url>
+        </urlset>
+        EOF
+        echo "✅ Created sitemap.xml"
+
+    - name: Setup Pages
+      uses: actions/configure-pages@v3
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v2
+      with:
+        path: '.'
+        retention-days: 30
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v2
+
+    - name: Create deployment status
+      run: |
+        echo "🚀 Deployment completed successfully!"
+        echo "📍 URL: ${{ steps.deployment.outputs.url }}"
+
+    - name: Add deployment info to release (if triggered by release)
+      if: github.event_name == 'release'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { owner, repo } = context.repo;
+          const release_id = context.payload.release.id;
+          const deployment_url = '${{ steps.deployment.outputs.url }}';
+
+          await github.rest.repos.createReleaseNotes({
+            owner,
+            repo,
+            tag_name: context.payload.release.tag_name,
+            body: `${context.payload.release.body}\n\n\n---\n\n🌐 **Live Demo**: [${deployment_url}](${deployment_url})`,
+          });
+
+  verify-deployment:
+    name: Verify Deployment
+    runs-on: ubuntu-latest
+    needs: build-and-deploy
+    if: always() && needs.build-and-deploy.result == 'success'
+
+    steps:
+    - name: Wait for deployment
+      run: sleep 30
+
+    - name: Verify deployment is accessible
+      run: |
+        DEPLOY_URL="${{ needs.build-and-deploy.outputs.url }}"
+        echo "Verifying deployment at: $DEPLOY_URL"
+
+        # Try to access the deployed site
+        for i in {1..10}; do
+          if curl -f -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL" | grep -q "200\|404"; then
+            echo "✅ Deployment is accessible"
+            break
+          else
+            echo "⏳ Waiting for deployment to propagate... (attempt $i/10)"
+            sleep 10
+          fi
+        done
+
+        # Final verification
+        HTTP_CODE=$(curl -f -s -o /dev/null -w "%{http_code}" "$DEPLOY_URL" || echo "000")
+        if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "404" ]; then
+          echo "✅ Deployment verification successful (HTTP $HTTP_CODE)"
+        else
+          echo "❌ Deployment verification failed (HTTP $HTTP_CODE)"
+          exit 1
+        fi
+
+    - name: Check for SPA routing
+      run: |
+        DEPLOY_URL="${{ needs.build-and-deploy.outputs.url }}"
+
+        # Test SPA routing by checking a non-existent route
+        echo "Testing SPA routing for /manage route..."
+        MANAGE_URL="$DEPLOY_URL/manage"
+
+        HTTP_CODE=$(curl -f -s -o /dev/null -w "%{http_code}" "$MANAGE_URL" || echo "000")
+        if [ "$HTTP_CODE" = "200" ]; then
+          echo "✅ SPA routing is working correctly"
+        else
+          echo "⚠️  SPA routing may not be configured (HTTP $HTTP_CODE)"
+          echo "This is expected for GitHub Pages without custom routing"
+        fi
+
+    - name: Performance check
+      run: |
+        DEPLOY_URL="${{ needs.build-and-deploy.outputs.url }}"
+
+        # Check load time (simple check)
+        echo "Checking page load time..."
+        START_TIME=$(date +%s%N)
+
+        if curl -s -f "$DEPLOY_URL" > /dev/null; then
+          END_TIME=$(date +%s%N)
+          LOAD_TIME=$(( (END_TIME - START_TIME) / 1000000 )) # Convert to milliseconds
+          echo "📊 Page load time: ${LOAD_TIME}ms"
+
+          if [ "$LOAD_TIME" -lt 2000 ]; then
+            echo "✅ Good performance (< 2s)"
+          else
+            echo "⚠️  Consider optimization (> 2s)"
+          fi
+        else
+          echo "❌ Failed to load page"
+        fi
+
+    - name: Security checks
+      run: |
+        DEPLOY_URL="${{ needs.buildanddeploy.outputs.url }}"
+
+        # Check for security headers
+        echo "Checking security headers..."
+        HEADERS=$(curl -s -I "$DEPLOY_URL" || echo "")
+
+        if echo "$HEADERS" | grep -qi "x-frame-options"; then
+          echo "✅ X-Frame-Options header present"
+        else
+          echo "⚠️  X-Frame-Options header missing (GitHub Pages limitation)"
+        fi
+
+        if echo "$HEADERS" | grep -qi "x-content-type-options"; then
+          echo "✅ X-Content-Type-Options header present"
+        else
+          echo "⚠️  X-Content-Type-Options header missing (GitHub Pages limitation)"
+        fi
+
+  notification:
+    name: Notify Deployment
+    runs-on: ubuntu-latest
+    needs: [build-and-deploy, verify-deployment]
+    if: always()
+
+    steps:
+    - name: Create deployment summary
+      run: |
+        echo "# 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Repository**: ${{ github.repository }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Environment**: ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Version**: ${{ github.event.release.tag_name || github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        if [ "${{ needs.build-and-deploy.result }}" = "success" ]; then
+          echo "✅ **Build and Deploy**: Success" >> $GITHUB_STEP_SUMMARY
+          echo "**📍 URL**: ${{ needs.build-and-deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Build and Deploy**: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        if [ "${{ needs.verify-deployment.result }}" = "success" ]; then
+          echo "✅ **Verification**: Success" >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ needs.verify-deployment.result }}" = "failure" ]; then
+          echo "❌ **Verification**: Failed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "⏭️ **Verification**: Skipped" >> $GITHUB_STEP_SUMMARY
+        fi
+
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "📊 **Deployment Statistics**:" >> $GITHUB_STEP_SUMMARY
+        echo "- Deployed by: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Triggered by: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Timestamp: $(date -u)" >> $GITHUB_STEP_SUMMARY
+
+    - name: Post to Slack (if configured)
+      if: env.SLACK_WEBHOOK_URL != ''
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+          --data '{
+            "text": "🚀 LocalURL deployed successfully!",
+            "attachments": [
+              {
+                "color": "good",
+                "fields": [
+                  {
+                    "title": "Environment",
+                    "value": "${{ github.event.inputs.environment || ''production'' }}",
+                    "short": true
+                  },
+                  {
+                    "title": "URL",
+                    "value": "${{ needs.build-and-deploy.outputs.url }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Version",
+                    "value": "${{ github.event.release.tag_name || github.sha }}",
+                    "short": true
+                  },
+                  {
+                    "title": "Deployed by",
+                    "value": "@${{ github.actor }}",
+                    "short": true
+                  }
+                ]
+              }
+            ]
+          }' \
+          "$SLACK_WEBHOOK_URL"

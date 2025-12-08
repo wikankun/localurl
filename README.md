@@ -10,6 +10,9 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-blue.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![HTML5](https://img.shields.io/badge/HTML5-Latest-orange.svg)](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5)
 [![CSS3](https://img.shields.io/badge/CSS3-Modern-green.svg)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+[![CI](https://github.com/wikan/localurl/workflows/CI/badge.svg)](https://github.com/wikan/localurl/actions)
+[![Release](https://github.com/wikan/localurl/workflows/Release/badge.svg)](https://github.com/wikan/localurl/releases)
+[![Deploy](https://github.com/wikan/localurl/workflows/Deploy/badge.svg)](https://wikan.github.io/localurl)
 
 </div>
 
@@ -206,6 +209,50 @@ python3 -m http.server 8000 --directory /path/to/localurl
 # Or with Node.js serve
 npx serve /path/to/localurl -p 8000
 ```
+
+## 🔄 CI/CD
+
+This project uses GitHub Actions for automated testing, releasing, and deployment:
+
+### Workflow Overview
+
+1. **CI Workflow** (`ci.yml`)
+   - Runs on every push and pull request
+   - Lints CSS with stylelint
+   - Validates HTML and JavaScript syntax
+   - Builds CSS to catch compilation errors
+   - Performs security scans
+   - Checks bundle sizes
+
+2. **Release Workflow** (`release.yml`)
+   - Automatically creates releases based on conventional commits
+   - Generates version numbers (semantic versioning)
+   - Creates detailed release notes from commit messages
+   - Tags releases and uploads distribution files
+
+3. **Deploy Workflow** (`deploy.yml`)
+   - Deploys to GitHub Pages on release
+   - Optimizes files for production
+   - Sets up SPA routing with 404.html
+   - Verifies deployment success
+
+### Conventional Commits
+
+Follow this format for automatic version bumping:
+
+```
+feat: add new feature           # Minor version bump
+fix: resolve bug                # Patch version bump
+feat!: breaking change          # Major version bump
+chore: update dependencies      # No version bump
+docs: update documentation      # No version bump
+```
+
+### Badges
+
+- ![CI](https://github.com/wikan/localurl/workflows/CI/badge.svg) - CI status
+- ![Release](https://github.com/wikan/localurl/workflows/Release/badge.svg) - Latest release
+- ![Deploy](https://github.com/wikan/localurl/workflows/Deploy/badge.svg) - Deployment status
 
 ## 🔧 Development
 

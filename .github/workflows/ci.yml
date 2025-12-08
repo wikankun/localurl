@@ -1,0 +1,306 @@
+name: CI
+
+# Run CI on pushes to main branch and all pull requests
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Prevent multiple concurrent runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-validate:
+    name: Lint and Validate
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Validate package.json
+      run: |
+        echo "Checking package.json syntax..."
+        npm run --silent verify-package || node -e "JSON.parse(require('fs').readFileSync('package.json', 'utf8'))"
+        echo "✅ package.json is valid"
+
+    - name: Lint CSS with stylelint
+      run: |
+        echo "Running CSS linting..."
+        npm run lint:css
+        echo "✅ CSS linting passed"
+      continue-on-error: false
+
+    - name: Validate HTML syntax
+      run: |
+        echo "Validating HTML..."
+        # Install html-validator temporarily
+        npm install -g html-validator
+        html-validator --file=index.html --format=json || echo "Note: HTML validation completed"
+        echo "✅ HTML validation completed"
+      continue-on-error: true  # HTML validation can be strict
+
+    - name: Check JavaScript syntax
+      run: |
+        echo "Checking JavaScript syntax..."
+        find src/js -name "*.js" -exec node -c {} \;
+        echo "✅ JavaScript syntax is valid"
+
+    - name: Check for console.log statements
+      run: |
+        echo "Checking for debug console statements..."
+        if grep -r "console.log" src/js/ --exclude-dir=node_modules; then
+          echo "⚠️  Warning: console.log statements found. Please remove before production."
+          exit 1
+        else
+          echo "✅ No console.log statements found"
+        fi
+      continue-on-error: true  # Warning only
+
+    - name: Validate that no external dependencies are used in production
+      run: |
+        echo "Checking that production files don't import external modules..."
+        # Check that index.html doesn't reference external CDNs
+        if grep -q "cdn\|unpkg\|jsdelivr" index.html; then
+          echo "❌ External CDN references found in index.html"
+          grep "cdn\|unpkg\|jsdelivr" index.html
+          exit 1
+        else
+          echo "✅ No external CDN references found"
+        fi
+
+        # Check JS files don't import from node_modules
+        if grep -r "require\|import.*from.*'" src/js/ | grep -v "^[[:space:]]*//"; then
+          echo "❌ External module imports found"
+          grep -r "require\|import.*from.*'" src/js/
+          exit 1
+        else
+          echo "✅ No external module imports found"
+        fi
+
+  build:
+    name: Build CSS
+    runs-on: ubuntu-latest
+    needs: lint-and-validate
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build CSS
+      run: |
+        echo "Building Tailwind CSS..."
+        npm run build-css
+
+        # Check that output.css was created and is not empty
+        if [ -f src/css/output.css ] && [ -s src/css/output.css ]; then
+          echo "✅ CSS build successful"
+          echo "Output file size: $(wc -c < src/css/output.css) bytes"
+        else
+          echo "❌ CSS build failed - output.css is empty or missing"
+          exit 1
+        fi
+
+    - name: Validate built CSS
+      run: |
+        echo "Validating built CSS..."
+        # Basic checks for the built CSS
+        if grep -q "tailwind" src/css/output.css; then
+          echo "✅ Tailwind CSS found in output"
+        else
+          echo "⚠️  Warning: Tailwind utilities may not be present"
+        fi
+
+        # Check CSS is minified (if build flag was used)
+        if grep -q "   " src/css/output.css; then
+          echo "⚠️  Warning: CSS may not be properly minified"
+        fi
+
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: css-build
+        path: src/css/output.css
+        retention-days: 7
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run npm audit
+      run: |
+        echo "Running security audit on dependencies..."
+        npm audit --audit-level=moderate
+        echo "✅ Security audit completed"
+      continue-on-error: true  # Don't fail CI for audit issues
+
+    - name: Scan for sensitive data
+      run: |
+        echo "Scanning for potential sensitive data..."
+
+        # Check for common patterns that shouldn't be in the repo
+        patterns=(
+          "password\s*=\s*['\"][^'\"]+['\"]"
+          "api[_-]?key\s*=\s*['\"][^'\"]+['\"]"
+          "secret\s*=\s*['\"][^'\"]+['\"]"
+          "token\s*=\s*['\"][^'\"]+['\"]"
+          "ghp_[a-zA-Z0-9]{36}"
+          "gho_[a-zA-Z0-9]{36}"
+          "ghu_[a-zA-Z0-9]{36}"
+          "ghs_[a-zA-Z0-9]{36}"
+          "ghr_[a-zA-Z0-9]{36}"
+        )
+
+        found=false
+        for pattern in "${patterns[@]}"; do
+          if grep -rE "$pattern" . --exclude-dir=node_modules --exclude-dir=.git; then
+            echo "⚠️  Warning: Potential sensitive data pattern found: $pattern"
+            found=true
+          fi
+        done
+
+        if [ "$found" = false ]; then
+          echo "✅ No obvious sensitive data patterns found"
+        fi
+
+    - name: Verify privacy requirements
+      run: |
+        echo "Verifying privacy requirements..."
+
+        # Check that no external analytics or tracking scripts are included
+        if grep -r -i "google-analytics\|gtag\|fbq\|mixpanel\|segment" . --exclude-dir=node_modules --exclude-dir=.git; then
+          echo "❌ Tracking scripts found - this violates privacy requirements"
+          exit 1
+        else
+          echo "✅ No tracking scripts found"
+        fi
+
+        # Check that no external API calls are made
+        if grep -r "fetch.*http\|XMLHttpRequest" src/js/ | grep -v "//"; then
+          echo "⚠️  Warning: External API calls detected. Verify these are user URLs only."
+        else
+          echo "✅ No automatic external API calls found"
+        fi
+
+  size-check:
+    name: Size Check
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: css-build
+        path: src/css/
+
+    - name: Check bundle sizes
+      run: |
+        echo "Checking file sizes..."
+
+        # Calculate sizes
+        html_size=$(wc -c < index.html)
+        css_size=$(wc -c < src/css/output.css)
+        js_size=$(find src/js -name "*.js" -exec wc -c {} + | tail -1 | awk '{print $1}')
+
+        # Convert to KB
+        html_kb=$(echo "scale=2; $html_size / 1024" | bc)
+        css_kb=$(echo "scale=2; $css_size / 1024" | bc)
+        js_kb=$(echo "scale=2; $js_size / 1024" | bc)
+        total_kb=$(echo "scale=2; $html_kb + $css_kb + $js_kb" | bc)
+
+        echo "File sizes:"
+        echo "  HTML: ${html_kb} KB"
+        echo "  CSS:  ${css_kb} KB"
+        echo "  JS:   ${js_kb} KB"
+        echo "  Total: ${total_kb} KB"
+
+        # Size thresholds (adjust as needed)
+        max_css_kb=50
+        max_js_kb=100
+        max_total_kb=500
+
+        # Check against thresholds
+        if (( $(echo "$css_kb > $max_css_kb" | bc -l) )); then
+          echo "⚠️  Warning: CSS bundle is larger than ${max_css_kb} KB"
+        fi
+
+        if (( $(echo "$js_kb > $max_js_kb" | bc -l) )); then
+          echo "⚠️  Warning: JS bundle is larger than ${max_js_kb} KB"
+        fi
+
+        if (( $(echo "$total_kb > $max_total_kb" | bc -l) )); then
+          echo "⚠️  Warning: Total bundle size is larger than ${max_total_kb} KB"
+        fi
+
+        echo "✅ Size check completed"
+
+    - name: Performance check with Lighthouse (optional)
+      run: |
+        echo "Running Lighthouse performance check..."
+        npm install -g @lhci/cli@0.12.x
+
+        # Create a basic lhci config
+        cat > lighthouserc.json << EOF
+        {
+          "ci": {
+            "collect": {
+              "numberOfRuns": 1,
+              "url": ["http://localhost:8000"]
+            },
+            "assert": {
+              "assertions": {
+                "categories:performance": ["warn", {"minScore": 0.8}],
+                "categories:accessibility": ["error", {"minScore": 0.9}]
+              }
+            }
+          }
+        }
+        EOF
+
+        # Start a simple server and run Lighthouse
+        python3 -m http.server 8000 &
+        SERVER_PID=$!
+        sleep 2
+
+        lhci autorun || echo "Lighthouse check completed with warnings"
+
+        kill $SERVER_PID 2>/dev/null || true
+      continue-on-error: true

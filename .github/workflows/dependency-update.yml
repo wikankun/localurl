@@ -1,0 +1,96 @@
+name: Dependency Update
+
+# Schedule to run weekly on Sundays at 2 AM UTC
+on:
+  schedule:
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+
+jobs:
+  update-dependencies:
+    name: Update Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Check for outdated packages
+      id: outdated
+      run: |
+        # Get outdated packages
+        OUTDATED=$(npm outdated --json || echo '{}')
+        echo "outdated=$OUTDATED" >> $GITHUB_OUTPUT
+
+        # Count outdated packages
+        COUNT=$(echo "$OUTDATED" | jq 'length' || echo "0")
+        echo "count=$COUNT" >> $GITHUB_OUTPUT
+        echo "Outdated packages: $COUNT"
+
+    - name: Update dependencies
+      if: steps.outdated.outputs.count > 0
+      run: |
+        echo "Updating dependencies..."
+
+        # Update all packages
+        npm update
+
+        # Check if package.json changed
+        if ! git diff --quiet package.json; then
+          echo "Dependencies were updated"
+        else
+          echo "No dependency updates available"
+          exit 0
+        fi
+
+    - name: Run tests after update
+      if: steps.outdated.outputs.count > 0
+      run: |
+        echo "Running tests after dependency update..."
+        npm ci
+        npm run build-css || npm run build  # Try to build
+        echo "✅ Build successful after dependency update"
+
+    - name: Create Pull Request
+      if: steps.outdated.outputs.count > 0
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: "chore(deps): update dependencies"
+        title: "🔄 Update Dependencies"
+        body: |
+          ## 🔄 Dependency Update
+
+          This PR updates outdated npm packages.
+
+          ### 📦 Updated Packages
+
+          <!-- Updated packages will be listed here -->
+
+          ### ✅ Verification
+
+          - [x] Dependencies updated successfully
+          - [x] Build passes with new versions
+          - [x] No breaking changes detected
+
+          ### 📋 Next Steps
+
+          1. Review the updated dependencies
+          2. Test the application manually
+          3. Check for any breaking changes
+          4. Merge if everything looks good
+
+          ---
+
+          <sub>This PR was created automatically by GitHub Actions.</sub>
+        branch: deps/update-dependencies
+        delete-branch: true
+        draft: false

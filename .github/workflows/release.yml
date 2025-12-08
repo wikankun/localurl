@@ -1,0 +1,379 @@
+name: Release
+
+# Trigger on push to main branch (after CI passes)
+on:
+  push:
+    branches: [ main ]
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: 'Version bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - patch
+        - minor
+        - major
+
+# Prevent multiple releases from running simultaneously
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  analyze-commits:
+    name: Analyze Commits
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      version-bump: ${{ steps.bump.outputs.version-bump }}
+      should-release: ${{ steps.check.outputs.should-release }}
+      release-notes: ${{ steps.release-notes.outputs.notes }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Get full history for commit analysis
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install conventional-commits-parser
+      run: npm install -g conventional-commits-parser
+
+    - name: Get latest tag
+      id: latest-tag
+      run: |
+        # Get the latest tag
+        LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+        echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "Latest tag: $LATEST_TAG"
+
+    - name: Analyze commits since last release
+      id: analyze
+      run: |
+        # Get commits since last tag or all commits if no tags
+        if [ -n "${{ steps.latest-tag.outputs.tag }}" ]; then
+          COMMIT_RANGE="${{ steps.latest-tag.outputs.tag }}..HEAD"
+        else
+          COMMIT_RANGE="HEAD"
+        fi
+
+        echo "Analyzing commits in range: $COMMIT_RANGE"
+
+        # Get commit messages
+        COMMITS=$(git log --pretty=format:"%s" $COMMIT_RANGE)
+        echo "Commits found:"
+        echo "$COMMITS"
+
+        # Save commits to file for processing
+        echo "$COMMITS" > /tmp/commits.txt
+
+        # Count conventional commits
+        FEAT_COUNT=$(grep -c "^feat:" /tmp/commits.txt || echo "0")
+        FIX_COUNT=$(grep -c "^fix:" /tmp/commits.txt || echo "0")
+        BREAKING_COUNT=$(grep -c "BREAKING CHANGE:" /tmp/commits.txt || echo "0")
+
+        echo "Features: $FEAT_COUNT"
+        echo "Fixes: $FIX_COUNT"
+        echo "Breaking changes: $BREAKING_COUNT"
+
+        # Determine version bump
+        if [ "$BREAKING_COUNT" -gt 0 ]; then
+          BUMP="major"
+        elif [ "$FEAT_COUNT" -gt 0 ]; then
+          BUMP="minor"
+        elif [ "$FIX_COUNT" -gt 0 ]; then
+          BUMP="patch"
+        else
+          BUMP="none"
+        fi
+
+        echo "Recommended bump: $BUMP"
+        echo "version-bump=$BUMP" >> $GITHUB_OUTPUT
+
+        # Check if there are any conventional commits
+        TOTAL_COMMITS=$(grep -c "^\(feat\|fix\|docs\|style\|refactor\|test\|chore\):" /tmp/commits.txt || echo "0")
+        if [ "$TOTAL_COMMITS" -gt 0 ] || [ "$BREAKING_COUNT" -gt 0 ]; then
+          SHOULD_RELEASE="true"
+        else
+          SHOULD_RELEASE="false"
+        fi
+        echo "should-release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+
+    - name: Determine final version bump
+      id: bump
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          # Use manual selection
+          BUMP="${{ github.event.inputs.version_type }}"
+        else
+          # Use automatic analysis
+          BUMP="${{ steps.analyze.outputs.version-bump }}"
+        fi
+
+        # Override to 'none' if no conventional commits found
+        if [ "${{ steps.analyze.outputs.should-release }}" = "false" ]; then
+          BUMP="none"
+        fi
+
+        echo "Final version bump: $BUMP"
+        echo "version-bump=$BUMP" >> $GITHUB_OUTPUT
+
+    - name: Check if should release
+      id: check
+      run: |
+        if [ "${{ steps.bump.outputs.version-bump }}" = "none" ]; then
+          echo "No release needed - no conventional commits found"
+          echo "should-release=false" >> $GITHUB_OUTPUT
+        else
+          echo "Release should be created"
+          echo "should-release=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Generate release notes
+      id: release-notes
+      run: |
+        if [ "${{ steps.check.outputs.should-release }}" = "false" ]; then
+          echo "notes=" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+
+        # Get commits since last tag
+        if [ -n "${{ steps.latest-tag.outputs.tag }}" ]; then
+          COMMIT_RANGE="${{ steps.latest-tag.outputs.tag }}..HEAD"
+        else
+          COMMIT_RANGE="HEAD"
+        fi
+
+        echo "Generating release notes for commits: $COMMIT_RANGE"
+
+        # Create release notes
+        cat << 'EOF' > /tmp/release_notes.md
+        # 🚀 Release Notes
+
+        ## 📦 Summary
+
+        EOF
+
+        # Add version information
+        if [ "${{ steps.bump.outputs.version-bump }}" = "major" ]; then
+          echo "**Major Release** 🎉" >> /tmp/release_notes.md
+        elif [ "${{ steps.bump.outputs.version-bump }}" = "minor" ]; then
+          echo "**Minor Release** ✨" >> /tmp/release_notes.md
+        else
+          echo "**Patch Release** 🐛" >> /tmp/release_notes.md
+        fi
+
+        echo "" >> /tmp/release_notes.md
+
+        # Categorize and format commits
+        echo "## 📋 Changes" >> /tmp/release_notes.md
+        echo "" >> /tmp/release_notes.md
+
+        # Get all conventional commits
+        git log --pretty=format:"%s" $COMMIT_RANGE | while read commit; do
+          # Parse commit type
+          if [[ $commit =~ ^(feat|fix|docs|style|refactor|test|chore):(.+)$ ]]; then
+            type="${BASH_REMATCH[1]}"
+            message="${BASH_REMATCH[2]}"
+
+            case $type in
+              "feat")
+                echo "### ✨ Features" >> /tmp/release_notes.md
+                ;;
+              "fix")
+                echo "### 🐛 Bug Fixes" >> /tmp/release_notes.md
+                ;;
+              "docs")
+                echo "### 📝 Documentation" >> /tmp/release_notes.md
+                ;;
+              "style")
+                echo "### 💅 Styling" >> /tmp/release_notes.md
+                ;;
+              "refactor")
+                echo "### ♻️ Refactoring" >> /tmp/release_notes.md
+                ;;
+              "test")
+                echo "### ✅ Testing" >> /tmp/release_notes.md
+                ;;
+              "chore")
+                echo "### 🔧 Maintenance" >> /tmp/release_notes.md
+                ;;
+            esac
+            echo "- $message" >> /tmp/release_notes.md
+          fi
+        done | awk '
+        /^### / {
+          if (header != $0) {
+            if (header != "") print "";
+            header = $0;
+            print header;
+          }
+        }
+        !/^### / && NF > 0 {
+          print "  " $0;
+        }
+        ' >> /tmp/release_notes.md
+
+        # Add breaking changes section if any
+        if git log --pretty=format:"%b" $COMMIT_RANGE | grep -q "BREAKING CHANGE:"; then
+          echo "" >> /tmp/release_notes.md
+          echo "### 💥 Breaking Changes" >> /tmp/release_notes.md
+          echo "" >> /tmp/release_notes.md
+          git log --pretty=format:"%b" $COMMIT_RANGE | grep "BREAKING CHANGE:" | sed 's/BREAKING CHANGE: /- /' >> /tmp/release_notes.md
+        fi
+
+        # Add footer
+        cat << 'EOF' >> /tmp/release_notes.md
+
+        ---
+
+        ## 📋 Installation
+
+        ```bash
+        # Clone the repository
+        git clone https://github.com/wikan/localurl.git
+
+        # Navigate and serve
+        cd localurl
+        python3 -m http.server 8000
+
+        # Open http://localhost:8000
+        ```
+
+        ## 🔒 Privacy Note
+
+        LocalURL remains **100% private** - all data stays in your browser with no tracking or backend requirements.
+
+        ---
+
+        <sub>Generated with ❤️ by GitHub Actions</sub>
+        EOF
+
+        # Read the notes and escape for GitHub output
+        NOTES=$(cat /tmp/release_notes.md | sed ':a;N;$!ba;s/\n/%0A/g')
+        echo "notes<<EOF" >> $GITHUB_OUTPUT
+        cat /tmp/release_notes.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: analyze-commits
+    if: needs.analyze-commits.outputs.should-release == 'true'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build CSS
+      run: npm run build-css
+
+    - name: Get current version
+      id: version
+      run: |
+        CURRENT_VERSION=$(node -p "require('./package.json').version")
+        echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+        # Calculate new version
+        BUMP="${{ needs.analyze-commits.outputs.version-bump }}"
+        case $BUMP in
+          "major")
+            NEW_VERSION=$(npm version major --no-git-tag-version)
+            ;;
+          "minor")
+            NEW_VERSION=$(npm version minor --no-git-tag-version)
+            ;;
+          "patch")
+            NEW_VERSION=$(npm version patch --no-git-tag-version)
+            ;;
+        esac
+
+        # Remove 'v' prefix if present
+        NEW_VERSION=${NEW_VERSION#v}
+        echo "new=$NEW_VERSION" >> $GITHUB_OUTPUT
+        echo "New version: $NEW_VERSION"
+
+    - name: Update version in package.json
+      run: |
+        npm version ${{ steps.version.outputs.new }} --no-git-tag-version
+
+    - name: Commit version bump
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add package.json
+        git commit -m "chore(release): bump version to ${{ steps.version.outputs.new }}"
+
+    - name: Tag release
+      run: |
+        git tag -a v${{ steps.version.outputs.new }} -m "Release v${{ steps.version.outputs.new }}"
+
+    - name: Push changes and tags
+      run: |
+        git push origin main --follow-tags
+
+    - name: Create Release Archive
+      run: |
+        # Create release archive
+        mkdir -p release
+        cp index.html release/
+        cp -r src release/
+        cp README.md LICENSE release/
+
+        # Create zip file
+        cd release
+        zip -r ../localurl-v${{ steps.version.outputs.new }}.zip .
+        cd ..
+
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: v${{ steps.version.outputs.new }}
+        release_name: LocalURL v${{ steps.version.outputs.new }}
+        body: ${{ needs.analyze-commits.outputs.release-notes }}
+        draft: false
+        prerelease: false
+
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./localurl-v${{ steps.version.outputs.new }}.zip
+        asset_name: localurl-v${{ steps.version.outputs.new }}.zip
+        asset_content_type: application/zip
+
+    - name: Trigger deployment
+      uses: peter-evans/repository-dispatch@v2
+      with:
+        event-type: new-release
+        client-payload: '{"version": "${{ steps.version.outputs.new }}", "tag": "v${{ steps.version.outputs.new }}"}'
+
+    - name: Notify on success
+      run: |
+        echo "🎉 Release v${{ steps.version.outputs.new }} created successfully!"
+        echo "📦 Release notes: https://github.com/wikan/localurl/releases/tag/v${{ steps.version.outputs.new }}"
+        echo "⬇️ Download: https://github.com/wikan/localurl/releases/download/v${{ steps.version.outputs.new }}/localurl-v${{ steps.version.outputs.new }}.zip"
