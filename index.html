@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LocalURL - Privacy-first, fully local URL shortener">
+    <title>LocalURL - Local URL Shortener</title>
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔗</text></svg>">
+
+    <!-- Tailwind CSS -->
+    <link href="./src/css/output.css" rel="stylesheet">
+
+    <meta name="theme-color" content="#3B82F6">
+    <meta name="color-scheme" content="light dark">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Navigation -->
+        <nav class="nav">
+            <div class="nav-container">
+                <div class="flex justify-between items-center py-4">
+                    <a href="#" class="nav-brand">
+                        <span class="text-shadow">LocalURL</span>
+                    </a>
+                    <div class="nav-menu">
+                        <a href="#" class="nav-link" data-page="home">
+                            <span class="sm:hidden">🏠</span>
+                            <span class="hidden sm:inline">🏠 Home</span>
+                        </a>
+                        <a href="#/manage" class="nav-link" data-page="manage">
+                            <span class="sm:hidden">📋</span>
+                            <span class="hidden sm:inline">📋 Manage</span>
+                        </a>
+                        <a href="#" class="nav-link" id="settingsBtn">
+                            <span class="sm:hidden">⚙️</span>
+                            <span class="hidden sm:inline">⚙️ Settings</span>
+                        </a>
+                        <button class="dark-mode-toggle nav-dark-mode-toggle" id="darkModeToggle" aria-label="Toggle dark mode">
+                            <span class="icon-sun">☀️</span>
+                            <span class="icon-moon">🌙</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Home Page -->
+            <div id="homePage" class="page active">
+                <div class="container">
+                    <div class="hero">
+                        <h1 class="hero-title">
+                            <span class="gradient-text text-shadow-lg">LocalURL</span>
+                        </h1>
+                        <p class="hero-subtitle">Privacy-first URL shortener that runs entirely in your browser</p>
+                    </div>
+
+                    <div class="max-w-2xl mx-auto">
+                        <div class="create-form">
+                            <form id="createUrlForm" class="form-card">
+                                <h2 class="form-title text-shadow-sm">🚀 Create Short Link</h2>
+
+                                <div class="form-group">
+                                    <label for="originalUrl" class="form-label">🌐 Destination URL</label>
+                                    <input
+                                        type="url"
+                                        id="originalUrl"
+                                        name="originalUrl"
+                                        class="form-input"
+                                        placeholder="https://example.com/very/long/url"
+                                        required
+                                        autocomplete="off"
+                                    >
+                                    <span class="form-error" id="urlError"></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="customSlug" class="form-label">🏷️ Custom Slug (Optional)</label>
+                                    <div class="input-group">
+                                        <input
+                                            type="text"
+                                            id="customSlug"
+                                            name="customSlug"
+                                            class="form-input"
+                                            placeholder="my-link"
+                                            pattern="[a-zA-Z0-9_-]+"
+                                            maxlength="50"
+                                            autocomplete="off"
+                                        >
+                                        <button type="button" class="btn btn-secondary btn-sm" id="randomSlugBtn">🎲 Random</button>
+                                    </div>
+                                    <span class="form-hint">Letters, numbers, hyphens, and underscores only</span>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary btn-full btn-lg hover-neo-lift">
+                                    ✨ Create Short Link
+                                </button>
+                            </form>
+
+                            <!-- Result Section -->
+                            <div id="resultSection" class="result-card hidden animate-bounce-in">
+                                <h3 class="result-title text-shadow-sm">🎉 Your Short Link</h3>
+                                <div class="result-url">
+                                    <input
+                                        type="text"
+                                        id="shortUrl"
+                                        class="result-input"
+                                        readonly
+                                    >
+                                    <button class="btn btn-icon btn-secondary" id="copyBtn" title="Copy to clipboard">📋</button>
+                                </div>
+                                <div class="result-actions">
+                                    <button class="btn btn-secondary" id="qrBtn">📱 Show QR Code</button>
+                                    <button class="btn btn-tertiary" id="createAnotherBtn">➕ Create Another</button>
+                                </div>
+                                <div id="qrCode" class="qr-code hidden"></div>
+                            </div>
+                        </div>
+
+                        <!-- Features -->
+                        <div class="features">
+                            <div class="feature-card hover-neo-lift">
+                                <div class="feature-icon">🔒</div>
+                                <h3 class="text-shadow-sm">100% Private</h3>
+                                <p>Everything stays in your browser. No tracking, no analytics.</p>
+                            </div>
+                            <div class="feature-card hover-neo-lift">
+                                <div class="feature-icon">⚡</div>
+                                <h3 class="text-shadow-sm">Lightning Fast</h3>
+                                <p>No network calls. Your links are created instantly.</p>
+                            </div>
+                            <div class="feature-card hover-neo-lift">
+                                <div class="feature-icon">📱</div>
+                                <h3 class="text-shadow-sm">Works Offline</h3>
+                                <p>Once loaded, LocalURL works completely offline.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manage Page -->
+            <div id="managePage" class="page">
+                <div class="container">
+                    <div class="page-header">
+                        <h1 class="page-title text-shadow">📋 Manage Links</h1>
+                        <div class="page-actions flex-col sm:flex-row items-stretch sm:items-center">
+                            <div class="search-box w-full sm:w-auto">
+                                <input
+                                    type="search"
+                                    id="searchInput"
+                                    class="search-input w-full sm:w-64"
+                                    placeholder="Search links..."
+                                >
+                            </div>
+                            <select id="sortSelect" class="sort-select w-full sm:w-auto">
+                                <option value="created-desc">Newest First</option>
+                                <option value="created-asc">Oldest First</option>
+                                <option value="clicks-desc">Most Clicked</option>
+                                <option value="slug-asc">Alphabetical</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="linksContainer" class="links-container">
+                        <div class="empty-state" id="emptyState">
+                            <div class="empty-icon">🔗</div>
+                            <h3 class="text-shadow-sm">No links yet</h3>
+                            <p>Create your first short link to get started!</p>
+                            <a href="#/" class="btn btn-primary btn-lg hover-neo-lift">✨ Create Link</a>
+                        </div>
+                        <div id="linksList" class="links-list hidden"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Page -->
+            <div id="aboutPage" class="page">
+                <div class="container">
+                    <div class="about-content max-w-4xl">
+                        <h1 class="page-title text-shadow mb-8">ℹ️ About LocalURL</h1>
+
+                        <div class="about-section">
+                            <h2 class="text-2xl font-bold mb-4">🎯 Mission</h2>
+                            <p class="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+                                LocalURL is a privacy-first URL shortener that keeps all your data local. No sign-ups, no tracking, no cloud dependencies. Just you and your links.
+                            </p>
+                        </div>
+
+                        <div class="about-section">
+                            <h2 class="text-2xl font-bold mb-4">⚡ Features</h2>
+                            <ul class="feature-list space-y-2">
+                                <li class="flex items-center gap-2 py-3">
+                                    <span class="text-green-500 text-xl">✅</span>
+                                    <span>Fully local - all data stored in IndexedDB</span>
+                                </li>
+                                <li class="flex items-center gap-2 py-3">
+                                    <span class="text-green-500 text-xl">✅</span>
+                                    <span>No tracking or analytics</span>
+                                </li>
+                                <li class="flex items-center gap-2 py-3">
+                                    <span class="text-green-500 text-xl">✅</span>
+                                    <span>Works offline once loaded</span>
+                                </li>
+                                <li class="flex items-center gap-2 py-3">
+                                    <span class="text-green-500 text-xl">✅</span>
+                                    <span>Custom slugs support</span>
+                                </li>
+                                <li class="flex items-center gap-2 py-3">
+                                    <span class="text-green-500 text-xl">✅</span>
+                                    <span>Click tracking (local only)</span>
+                                </li>
+                                <li class="flex items-center gap-2 py-3">
+                                    <span class="text-green-500 text-xl">✅</span>
+                                    <span>Dark mode support</span>
+                                </li>
+                                <li class="flex items-center gap-2 py-3">
+                                    <span class="text-green-500 text-xl">✅</span>
+                                    <span>Export/import your links</span>
+                                </li>
+                                <li class="flex items-center gap-2 py-3">
+                                    <span class="text-green-500 text-xl">✅</span>
+                                    <span>QR code generation</span>
+                                </li>
+                                <li class="flex items-center gap-2 py-3">
+                                    <span class="text-green-500 text-xl">✅</span>
+                                    <span>Search and sort functionality</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div class="about-section">
+                            <h2 class="text-2xl font-bold mb-4">🛠️ Technology</h2>
+                            <p class="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+                                Built with vanilla HTML, CSS, and JavaScript. No external dependencies in production. Data is stored using IndexedDB, making it truly local and private.
+                            </p>
+                        </div>
+
+                        <div class="about-section">
+                            <h2 class="text-2xl font-bold mb-4">📦 Deploy</h2>
+                            <p class="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+                                Deploy LocalURL anywhere:
+                            </p>
+                            <ul class="list-disc list-inside mt-2 space-y-1 text-gray-700 dark:text-gray-300">
+                                <li>Static file hosting (GitHub Pages, Netlify, Vercel)</li>
+                                <li>Your own web server</li>
+                                <li>Docker container</li>
+                                <li>Local file system (file:// protocol)</li>
+                            </ul>
+                        </div>
+
+                        <div class="about-section">
+                            <h2 class="text-2xl font-bold mb-4">💝 Open Source</h2>
+                            <p class="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
+                                LocalURL is free and open source. Contribute on GitHub to help make it better!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="modal hidden">
+            <div class="modal-overlay" id="modalOverlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title text-shadow-sm">⚙️ Settings</h2>
+                    <button class="modal-close" id="closeSettingsBtn">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-section">
+                        <h3 class="settings-title">📊 Data Management</h3>
+                        <div class="setting-buttons">
+                            <button class="btn btn-secondary hover-neo-lift" id="exportBtn">📤 Export JSON</button>
+                            <button class="btn btn-secondary hover-neo-lift" id="importBtn">📥 Import JSON</button>
+                            <input type="file" id="importFile" accept=".json" class="hidden">
+                            <button class="btn btn-danger hover-neo-lift" id="clearDbBtn">🗑️ Clear All Data</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-title">📈 Statistics</h3>
+                        <div class="stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Total Links:</span>
+                                <span class="stat-value" id="totalLinksStat">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Total Clicks:</span>
+                                <span class="stat-value" id="totalClicksStat">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Modal -->
+        <div id="editModal" class="modal hidden">
+            <div class="modal-overlay" id="editModalOverlay"></div>
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title text-shadow-sm">✏️ Edit Link</h2>
+                    <button class="modal-close" id="closeEditBtn">✕</button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editId" name="editId">
+
+                        <div class="form-group">
+                            <label for="editSlug" class="form-label">🏷️ Slug</label>
+                            <input
+                                type="text"
+                                id="editSlug"
+                                name="editSlug"
+                                class="form-input"
+                                pattern="[a-zA-Z0-9_-]+"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label for="editUrl" class="form-label">🌐 Destination URL</label>
+                            <input
+                                type="url"
+                                id="editUrl"
+                                name="editUrl"
+                                class="form-input"
+                                required
+                            >
+                        </div>
+
+                        <div class="modal-actions">
+                            <button type="submit" class="btn btn-primary hover-neo-lift">💾 Save Changes</button>
+                            <button type="button" class="btn btn-secondary hover-neo-lift" id="cancelEditBtn">❌ Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast hidden">
+            <span id="toastMessage"></span>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+      console.log('Page loading...');
+      document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded');
+        console.log('CSS files loaded:', document.styleSheets.length);
+      });
+    </script>
+    <script type="module" src="src/js/utils.js"></script>
+    <script type="module" src="src/js/storage.js"></script>
+    <script type="module" src="src/js/router.js"></script>
+    <script type="module" src="src/js/ui.js"></script>
+    <script type="module" src="src/js/app.js"></script>
+</body>
+</html>

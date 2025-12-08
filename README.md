@@ -1,0 +1,391 @@
+# LocalURL
+
+<div align="center">
+
+![LocalURL Logo](https://img.icons8.com/color/96/000000/link.png)
+
+**Privacy-first, fully local URL shortener**
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-blue.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![HTML5](https://img.shields.io/badge/HTML5-Latest-orange.svg)](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5)
+[![CSS3](https://img.shields.io/badge/CSS3-Modern-green.svg)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+
+</div>
+
+## 🎯 About
+
+LocalURL is a lightweight, privacy-first URL shortener that runs entirely in your browser. **No backend, no tracking, no cloud dependencies**. All your data is stored locally using IndexedDB, making it truly private and offline-capable.
+
+### ✨ Key Features
+
+- 🔒 **100% Private** - Everything stays in your browser
+- ⚡ **Lightning Fast** - No network calls, instant link creation
+- 📱 **Works Offline** - Once loaded, works completely offline
+- 🎨 **Beautiful UI** - Modern neo-brutalism design with dark mode
+- 🔍 **Search & Sort** - Find your links quickly
+- 📊 **Click Tracking** - Local analytics only
+- 📤 **Export/Import** - Backup your links as JSON
+- 📱 **QR Codes** - Generate QR codes for your links
+- ⌨️ **Keyboard Shortcuts** - Power user features
+- 🐳 **Docker Ready** - Easy deployment
+
+## 🚀 Quick Start
+
+### Method 1: Direct Download
+
+1. Download the latest release from [Releases](https://github.com/your-repo/localurl/releases)
+2. Extract the archive
+3. Open `index.html` in your web browser
+4. Done! 🎉
+
+### Method 2: Using Python
+
+```bash
+# Clone the repository
+git clone https://github.com/your-repo/localurl.git
+cd localurl
+
+# Start a local server
+python -m http.server 8000
+
+# Open http://localhost:8000 in your browser
+```
+
+### Method 3: Using Node.js
+
+```bash
+# Clone the repository
+git clone https://github.com/your-repo/localurl.git
+cd localurl
+
+# Install serve globally (if not already installed)
+npm install -g serve
+
+# Start the server
+serve .
+
+# Open http://localhost:3000 in your browser
+```
+
+### Method 4: Docker
+
+```bash
+# Pull and run
+docker run -p 8000:8000 ghcr.io/your-repo/localurl:latest
+
+# Or build and run locally
+git clone https://github.com/your-repo/localurl.git
+cd localurl
+docker build -t localurl .
+docker run -p 8000:8000 localurl
+```
+
+## 📱 Usage
+
+### Creating Short Links
+
+1. **Basic Link**: Enter any URL and click "Create Short Link"
+2. **Custom Slug**: Optional - enter your preferred short identifier
+3. **Random Slug**: Click the dice button for a random slug
+4. **Copy Link**: Use the copy button or keyboard shortcut
+5. **QR Code**: Generate QR codes for mobile sharing
+
+### Managing Links
+
+1. **View All Links**: Navigate to the Manage page
+2. **Search**: Find links by slug or URL
+3. **Sort**: By date, clicks, or alphabetically
+4. **Edit**: Modify slug or destination URL
+5. **Delete**: Remove unwanted links
+6. **Analytics**: View click counts and creation dates
+
+### Settings & Data
+
+- **Dark Mode**: Toggle between light and dark themes
+- **Export Links**: Download all links as JSON backup
+- **Import Links**: Restore from JSON file
+- **Clear Data**: Delete all stored links
+- **Statistics**: View total links and clicks
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + K` | Search links (Manage page) |
+| `Ctrl/Cmd + N` | Create new link (when not on Home) |
+| `Escape` | Close modal/dialog |
+| `?` | Show keyboard shortcuts help |
+
+## 🏗️ Architecture
+
+LocalURL is built with modern web technologies:
+
+- **HTML5** - Semantic markup
+- **Tailwind CSS** - Utility-first CSS with custom neo-brutalism design
+- **JavaScript ES6+** - Modern JavaScript features
+- **IndexedDB** - Client-side database for persistence
+- **Service Worker** - Optional offline support
+
+### File Structure
+
+```
+localurl/
+├── index.html              # Main application file
+├── src/
+│   ├── css/
+│   │   ├── input.css       # Tailwind input styles
+│   │   ├── output.css      # Generated Tailwind styles
+│   │   └── variables.css   # Legacy CSS custom properties (deprecated)
+│   ├── js/
+│   │   ├── utils.js        # Utility functions
+│   │   ├── storage.js      # IndexedDB operations
+│   │   ├── router.js       # Client-side routing
+│   │   ├── ui.js           # UI controller
+│   │   └── app.js          # Main application entry
+│   └── assets/
+│       └── icons/          # Icons and images
+├── tailwind.config.js      # Tailwind configuration
+├── postcss.config.js       # PostCSS configuration
+├── package.json            # Node.js dependencies and scripts
+├── Dockerfile              # Docker configuration
+├── docker-compose.yml      # Docker Compose setup
+└── README.md               # This file
+```
+
+## 🚀 Deployment
+
+### Static Hosting
+
+Deploy to any static hosting service:
+
+- **Netlify**: Drag and drop the folder
+- **Vercel**: Connect your GitHub repository
+- **GitHub Pages**: Enable GitHub Pages in repository settings
+- **Surge.sh**: `surge .` in the project directory
+- **Firebase Hosting**: `firebase deploy`
+
+### Docker
+
+```bash
+# Build image
+docker build -t localurl .
+
+# Run container
+docker run -d -p 8000:8000 --name localurl localurl
+
+# With Docker Compose
+docker-compose up -d
+```
+
+### Nginx Reverse Proxy
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    location / {
+        proxy_pass http://localhost:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+### Self-Hosted Binary
+
+For easy deployment without Docker:
+
+```bash
+# Using a simple HTTP server
+python3 -m http.server 8000 --directory /path/to/localurl
+
+# Or with Node.js serve
+npx serve /path/to/localurl -p 8000
+```
+
+## 🔧 Development
+
+### Prerequisites
+
+- Modern web browser with IndexedDB support
+- Local web server (see Quick Start)
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/your-repo/localurl.git
+cd localurl
+
+# Install Node.js dependencies
+npm install
+
+# Start development server (with live CSS compilation)
+npm run dev
+# or use Python directly
+python -m http.server 8000
+
+# Open http://localhost:8000
+```
+
+### Build for Production
+
+```bash
+# Build the CSS
+npm run build-css
+
+# The output.css file will be generated in src/css/output.css
+# This file contains all the optimized Tailwind CSS
+```
+
+### Code Style
+
+The project follows these conventions:
+
+- **ES6+ JavaScript** with modern features
+- **Tailwind CSS** with custom neo-brutalism design system
+- **Custom Tailwind utilities** for neo-brutalism effects
+- **Mobile-first responsive design**
+- **Semantic HTML** wherever possible
+
+### Browser Support
+
+LocalURL works in all modern browsers that support:
+
+- IndexedDB (for storage)
+- ES6+ JavaScript features
+- CSS Custom Properties
+- Fetch API
+
+Tested in:
+- ✅ Chrome 90+
+- ✅ Firefox 88+
+- ✅ Safari 14+
+- ✅ Edge 90+
+
+## 📊 Data Storage
+
+### IndexedDB Schema
+
+```javascript
+// Link Object
+{
+  id: "link_1640995200000_abc123def",
+  slug: "my-link",
+  originalUrl: "https://example.com/very/long/url",
+  createdAt: "2022-01-01T00:00:00.000Z",
+  clicks: 42,
+  customSlug: false
+}
+```
+
+### Export Format
+
+```json
+{
+  "version": "1.0",
+  "exportedAt": "2022-01-01T00:00:00.000Z",
+  "links": [
+    {
+      "id": "link_...",
+      "slug": "my-link",
+      "originalUrl": "https://example.com",
+      "createdAt": "2022-01-01T00:00:00.000Z",
+      "clicks": 10,
+      "customSlug": true
+    }
+  ]
+}
+```
+
+## 🔒 Privacy
+
+### What We Don't Do
+
+- ❌ No tracking or analytics
+- ❌ No data collection
+- ❌ No external API calls
+- ❌ No cookies
+- ❌ No server-side processing
+- ❌ No third-party dependencies
+
+### What We Do
+
+- ✅ Store data locally in IndexedDB
+- ✅ Work offline once loaded
+- ✅ Optional local event logging for debugging
+- ✅ Transparent, open-source code
+
+### Data Security
+
+- All data remains in your browser
+- IndexedDB is sandboxed per domain
+- No network requests except for your URLs
+- No server-side storage or processing
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) before getting started.
+
+### How to Contribute
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Test thoroughly in multiple browsers
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Development Guidelines
+
+- Keep it simple and lightweight
+- No external dependencies in production
+- Maintain browser compatibility
+- Test your changes thoroughly
+- Follow the existing code style
+
+## 📝 Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version history.
+
+## 📄 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API) - Powerful client-side storage
+- [CSS Custom Properties](https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties) - Dynamic theming
+- [Service Workers](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) - Offline capabilities
+- The open-source community
+
+## 🔗 Links
+
+- [Homepage](https://github.com/your-repo/localurl)
+- [Documentation](https://github.com/your-repo/localurl/wiki)
+- [Issues](https://github.com/your-repo/localurl/issues)
+- [Releases](https://github.com/your-repo/localurl/releases)
+
+## 📞 Support
+
+If you encounter any issues or have questions:
+
+1. Check the [Issues](https://github.com/your-repo/localurl/issues) page
+2. Search existing discussions
+3. Create a new issue with details
+4. Include browser version and steps to reproduce
+
+---
+
+<div align="center">
+
+**Made with ❤️ for privacy-conscious users**
+
+[⭐ Star this repo](https://github.com/your-repo/localurl) | [🐛 Report Issues](https://github.com/your-repo/localurl/issues) | [💡 Suggest Features](https://github.com/your-repo/localurl/discussions)
+
+</div>

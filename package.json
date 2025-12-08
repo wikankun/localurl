@@ -1,0 +1,65 @@
+{
+  "name": "localurl",
+  "version": "1.0.0",
+  "description": "Privacy-first, fully local URL shortener that runs entirely in your browser",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "serve": "python3 -m http.server 8000",
+    "dev": "concurrently \"npm run watch-css\" \"python3 -m http.server 8000\"",
+    "build-css": "tailwindcss -i ./src/css/input.css -o ./src/css/output.css --minify",
+    "watch-css": "tailwindcss -i ./src/css/input.css -o ./src/css/output.css --watch",
+    "build": "npm run build-css && echo 'Build completed with Tailwind CSS!'",
+    "docker:build": "docker build -t localurl .",
+    "docker:compose": "docker-compose up -d",
+    "docker:stop": "docker-compose down",
+    "lint:css": "stylelint 'src/css/**/*.css'",
+    "lint:js": "echo 'JavaScript linting not configured'",
+    "test": "echo 'Tests not yet implemented'",
+    "deploy:vercel": "npm run build-css && vercel --prod",
+    "deploy:netlify": "npm run build-css && netlify deploy --prod --dir=.",
+    "clean": "find . -name '*.log' -type f -delete && find . -name '.DS_Store' -type f -delete"
+  },
+  "keywords": [
+    "url-shortener",
+    "privacy",
+    "local",
+    "offline",
+    "browser",
+    "indexeddb",
+    "pwa",
+    "vanilla-js",
+    "tailwindcss",
+    "neobrutalism"
+  ],
+  "author": "LocalURL Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/localurl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/localurl/issues"
+  },
+  "homepage": "https://github.com/yourusername/localurl#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie <= 11"
+  ],
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.10",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "postcss": "^8.4.32",
+    "stylelint": "^15.11.0",
+    "stylelint-config-standard": "^34.0.0",
+    "tailwindcss": "^3.3.6"
+  },
+  "dependencies": {}
+}
