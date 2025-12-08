@@ -1,7 +1,7 @@
 {
   "name": "localurl",
   "version": "1.0.0",
-  "description": "Privacy-first, fully local URL shortener that runs entirely in your browser",
+  "description": "Privacy-first URL shortener that runs entirely in your browser. No backend, no tracking, fully offline-capable.",
   "main": "index.html",
   "type": "module",
   "scripts": {
@@ -31,9 +31,23 @@
     "pwa",
     "vanilla-js",
     "tailwindcss",
-    "neobrutalism"
+    "neobrutalism",
+    "link-shortener",
+    "no-backend",
+    "client-side",
+    "self-hosted",
+    "data-privacy",
+    "javascript",
+    "web-app",
+    "progressive-web-app",
+    "static-site",
+    "docker"
   ],
-  "author": "LocalURL Contributors",
+  "author": {
+    "name": "LocalURL Contributors",
+    "email": "contributors@localurl.dev",
+    "url": "https://github.com/wikan/localurl"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -52,6 +66,27 @@
     "not dead",
     "not ie <= 11"
   ],
+  "files": [
+    "index.html",
+    "src/",
+    "tailwind.config.js",
+    "postcss.config.js",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "funding": {
+    "type": "individual",
+    "url": "https://github.com/sponsors/wikan"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "config": {
+    "port": 8000,
+    "build_dir": "dist"
+  },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.10",
     "autoprefixer": "^10.4.16",
