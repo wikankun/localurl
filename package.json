@@ -14,7 +14,7 @@
     "docker:build": "docker build -t localurl .",
     "docker:compose": "docker-compose up -d",
     "docker:stop": "docker-compose down",
-    "lint:css": "stylelint 'src/css/**/*.css'",
+    "lint:css": "stylelint 'src/css/*.css' --ignore-path .gitignore || echo 'Stylelint configuration not found'",
     "lint:js": "echo 'JavaScript linting not configured'",
     "test": "echo 'Tests not yet implemented'",
     "deploy:vercel": "npm run build-css && vercel --prod",

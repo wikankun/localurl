@@ -1,0 +1,66 @@
+{
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "indentation": 2,
+    "string-quotes": "single",
+    "no-duplicate-selectors": true,
+    "color-hex-case": "lower",
+    "color-hex-length": "short",
+    "error": "no-empty-source",
+    "selector-pseudo-class-no-unknown": [
+      true,
+      {
+        "ignorePseudoClasses": ["global"]
+      }
+    ],
+    "selector-pseudo-element-no-unknown": [
+      true,
+      {
+        "ignorePseudoElements": ["v-deep", "v-global", "v-slotted"]
+      }
+    ],
+    "function-no-unknown": [
+      true,
+      {
+        "ignoreFunctions": ["theme"]
+      }
+    ],
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "tailwind",
+          "apply",
+          "variants",
+          "responsive",
+          "screen"
+        ]
+      }
+    ],
+    "no-invalid-position-at-import-rule": null,
+    "unit-no-unknown": [
+      true,
+      {
+        "ignoreUnits": ["rpx"]
+      }
+    ],
+    "rule-empty-line-before": [
+      "always",
+      {
+        "except": ["first-nested"],
+        "ignore": ["after-comment"]
+      }
+    ],
+    "declaration-empty-line-before": null,
+    "custom-property-empty-line-before": null,
+    "alpha-value-notation": "number",
+    "hue-degree-notation": "angle",
+    "color-function-notation": "modern",
+    "media-feature-range-notation": "prefix"
+  },
+  "ignoreFiles": [
+    "dist/**/*",
+    "build/**/*",
+    "src/css/output.css"
+  ]
+}

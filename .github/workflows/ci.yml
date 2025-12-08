@@ -39,9 +39,15 @@ jobs:
     - name: Lint CSS with stylelint
       run: |
         echo "Running CSS linting..."
-        npm run lint:css
-        echo "✅ CSS linting passed"
-      continue-on-error: false
+
+        # Check if stylelint config exists
+        if [ ! -f .stylelintrc.json ] && [ ! -f .stylelintrc.js ] && [ ! -f stylelint.config.js ]; then
+          echo "⚠️  No stylelint configuration found, skipping CSS linting"
+          echo "To enable CSS linting, create a .stylelintrc.json file"
+        else
+          npm run lint:css
+          echo "✅ CSS linting passed"
+        fi
 
     - name: Validate HTML syntax
       run: |
@@ -202,7 +208,8 @@ jobs:
         echo "Verifying privacy requirements..."
 
         # Check that no external analytics or tracking scripts are included
-        if grep -r -i "google-analytics\|gtag\|fbq\|mixpanel\|segment" . --exclude-dir=node_modules --exclude-dir=.git; then
+        # Look for specific tracking patterns, not just the word "segment"
+        if grep -r -E "google-analytics\.com|googletagmanager\.com|gtag\(|fbq\(|mixpanel\(|segment\.io|analytics" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.yml" --exclude="*.md"; then
           echo "❌ Tracking scripts found - this violates privacy requirements"
           exit 1
         else

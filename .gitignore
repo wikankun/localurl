@@ -84,3 +84,9 @@ deployment_keys.tar
 
 .github/.release
 release-artifacts-*
+
+# Ignore generated Tailwind CSS
+src/css/output.css
+
+# Ignore stylelint cache
+.stylelintcache
