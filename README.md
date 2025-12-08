@@ -32,6 +32,11 @@ LocalURL is a lightweight, privacy-first URL shortener that runs entirely in you
 
 ## 🚀 Quick Start
 
+**Prerequisites**:
+- Node.js 16+ or pnpm (for building CSS)
+- Python 3 or Node.js (for local server)
+- Git (for cloning)
+
 ### Method 1: Direct Download
 
 1. Download the latest release from [Releases](https://github.com/wikankun/localurl/releases)
@@ -46,6 +51,16 @@ LocalURL is a lightweight, privacy-first URL shortener that runs entirely in you
 git clone https://github.com/wikankun/localurl.git
 cd localurl
 
+# Install dependencies (required for CSS build)
+npm install
+# or using pnpm
+pnpm install
+
+# Build the CSS
+npm run build-css
+# or using pnpm
+pnpm run build-css
+
 # Start a local server
 python -m http.server 8000
 
@@ -58,6 +73,16 @@ python -m http.server 8000
 # Clone the repository
 git clone https://github.com/wikankun/localurl.git
 cd localurl
+
+# Install dependencies (required for CSS build)
+npm install
+# or using pnpm
+pnpm install
+
+# Build the CSS
+npm run build-css
+# or using pnpm
+pnpm run build-css
 
 # Install serve globally (if not already installed)
 npm install -g serve
@@ -281,11 +306,12 @@ python -m http.server 8000
 ### Build for Production
 
 ```bash
-# Build the CSS
+# Build the CSS (required - the app uses Tailwind CSS)
 npm run build-css
 
 # The output.css file will be generated in src/css/output.css
 # This file contains all the optimized Tailwind CSS
+# Note: The application won't display correctly without this step
 ```
 
 ### Code Style
