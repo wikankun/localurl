@@ -10,9 +10,9 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-blue.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![HTML5](https://img.shields.io/badge/HTML5-Latest-orange.svg)](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/HTML5)
 [![CSS3](https://img.shields.io/badge/CSS3-Modern-green.svg)](https://developer.mozilla.org/en-US/docs/Web/CSS)
-[![CI](https://github.com/wikan/localurl/workflows/CI/badge.svg)](https://github.com/wikan/localurl/actions)
-[![Release](https://github.com/wikan/localurl/workflows/Release/badge.svg)](https://github.com/wikan/localurl/releases)
-[![Deploy](https://github.com/wikan/localurl/workflows/Deploy/badge.svg)](https://wikan.github.io/localurl)
+[![CI](https://github.com/wikankun/localurl/workflows/CI/badge.svg)](https://github.com/wikankun/localurl/actions)
+[![Release](https://github.com/wikankun/localurl/workflows/Release/badge.svg)](https://github.com/wikankun/localurl/releases)
+[![Deploy](https://github.com/wikankun/localurl/workflows/Deploy/badge.svg)](https://wikankun.github.io/localurl)
 
 </div>
 
@@ -250,9 +250,9 @@ docs: update documentation      # No version bump
 
 ### Badges
 
-- ![CI](https://github.com/wikan/localurl/workflows/CI/badge.svg) - CI status
-- ![Release](https://github.com/wikan/localurl/workflows/Release/badge.svg) - Latest release
-- ![Deploy](https://github.com/wikan/localurl/workflows/Deploy/badge.svg) - Deployment status
+- ![CI](https://github.com/wikankun/localurl/workflows/CI/badge.svg) - CI status
+- ![Release](https://github.com/wikankun/localurl/workflows/Release/badge.svg) - Latest release
+- ![Deploy](https://github.com/wikankun/localurl/workflows/Deploy/badge.svg) - Deployment status
 
 ## 🔧 Development
 
