@@ -134,7 +134,11 @@ class UIController {
     // Dark mode toggle
     const darkModeToggle = document.getElementById('darkModeToggle');
     if (darkModeToggle) {
-      darkModeToggle.addEventListener('change', (e) => this.toggleDarkMode(e.target.checked));
+      darkModeToggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isDark = !document.documentElement.classList.contains('dark');
+        this.toggleDarkMode(isDark);
+      });
     }
 
     // Export button
@@ -598,12 +602,6 @@ class UIController {
     const theme = savedTheme || (prefersDark ? 'dark' : 'light');
 
     this.setTheme(theme);
-
-    // Set toggle state
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    if (darkModeToggle) {
-      darkModeToggle.checked = theme === 'dark';
-    }
   }
 
   toggleDarkMode(isDark) {
