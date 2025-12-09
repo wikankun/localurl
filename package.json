@@ -1,6 +1,6 @@
 {
   "name": "localurl",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Privacy-first URL shortener that runs entirely in your browser. No backend, no tracking, fully offline-capable.",
   "main": "index.html",
   "type": "module",
